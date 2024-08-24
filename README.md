@@ -1,6 +1,11 @@
-# ranger
+# ranger [M5StickC-Plus Compatible]
 
 Turns your M5StickC with the ToF HAT into a laser rangefinder.
+This is a newer version of the main branch, now compatible with the M5StickC-Plus.
+
+It is still a work in progress.
+
+8/24/2024 - GUI scaling to the larger screen is still WIP
 
 ## Overview
 
