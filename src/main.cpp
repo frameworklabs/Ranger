@@ -3,7 +3,8 @@
 
 // Includes
 
-#include <M5StickC.h>
+// #include <M5StickC.h>
+#include <M5StickCPlus.h>
 #include <VL53L0X.h>
 #include <AXP192.h>
 #include <BLEDevice.h>
@@ -681,7 +682,8 @@ void blc_ranger_readBatteryInfo(struct blc_ranger_BatteryInfo *result)
 
   result->voltage = blc_float32(volt);
   result->stateOfCharge = blc_nat8(soc * 100);
-  result->isCharging = (M5.Axp.GetInputPowerStatus() & 0b00110000) != 0;
+  float vinVoltage = M5.Axp.GetVinVoltage();
+  bool isUSBConnected = (vinVoltage > 4.5);
 }
 
 static void write1Byte(TwoWire &wire, uint8_t addr, uint8_t reg, uint8_t data)
@@ -700,29 +702,23 @@ static void configurePMU()
   write1Byte(Wire1, 0x34, 0x94, 0b00000111); // Set GPIOs to float
 }
 
-static void sleepPeripherals()
-{
-  if (M5.Imu.imuType == 2)
-  {
+static void sleepPeripherals() {
+    // Put MPU6886 to sleep mode
     write1Byte(Wire1, MPU6886_ADDRESS, MPU6886_PWR_MGMT_1, 0b01001111);
-  }
 }
 
-static void wakePeripherals()
-{
-  if (M5.Imu.imuType == 2)
-  {
+// Function to wake peripherals up
+static void wakePeripherals() {
+    // Wake MPU6886 up
     write1Byte(Wire1, MPU6886_ADDRESS, MPU6886_PWR_MGMT_1, 0b00001001);
 
-    // IMU needs a bit to wakeup otherwise reading from it will report old data.
+    // Delay to allow IMU to stabilize after waking up
     delay(20);
-  }
 }
 
 void blc_ranger_activateDisplay(const blc_bool active)
 {
   M5.Axp.SetLDO2(active);
-  M5.Axp.SetLDO3(active);
 }
 
 void blc_ranger_enterSleep(const blc_nat16 ticks)
@@ -775,8 +771,8 @@ void setup()
   M5.begin();
 
   M5.Lcd.setRotation(1);
-  screen.createSprite(160, 80);
-  dialog.createSprite(140, 60);
+  screen.createSprite(240, 135);
+  dialog.createSprite(220, 115);
 
   note("Config WDT");
   if (!configureWDT())
@@ -805,15 +801,6 @@ void setup()
     note("IMU setup failed");
     setupErr = ERR_IMU;
     return;
-  }
-
-  if (M5.Imu.imuType == 1)
-  {
-    note("Detected SH200Q");
-  }
-  else if (M5.Imu.imuType == 2)
-  {
-    note("Detected MPU6886");
   }
 
   note("Init Wire");
